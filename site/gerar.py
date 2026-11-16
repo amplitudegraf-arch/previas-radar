@@ -18,7 +18,7 @@ PUBLICO = RAIZ / "publico"
 # Tudo fica dentro de /ap/ (previas26.com.br/ap/...): a Vercel do domínio
 # repassa esse caminho para cá. Cada cidade tem o seu endereço.
 BASE = PUBLICO / "ap"
-CAMINHO = {"santana": "santana/radar"}
+CAMINHO = {"santana": "santana/radar", "porto-grande": "porto-grande/radar"}
 SITE_URL = "https://www.previas26.com.br/ap/"
 
 
@@ -245,6 +245,7 @@ button.rank{font:inherit;background:none;border:0;width:100%;text-align:left;cur
 .abrir{font-weight:600;text-decoration:none;white-space:nowrap}
 .mais{background:var(--ink);border-radius:12px;font-family:Inter,sans-serif}
 .grade-rep{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.vazio-rep{background:var(--card,#fff);border:1px dashed #d8cfbf;border-radius:14px;padding:18px;color:var(--sub)}
 .rep{margin:0;border-radius:18px;background:#fff;box-shadow:var(--sombra)}
 .rep[open]{grid-column:1/-1}
 .rep summary{grid-template-columns:auto 1fr;align-items:start;cursor:pointer;padding:16px}
@@ -288,6 +289,7 @@ button.rank{font:inherit;background:none;border:0;width:100%;text-align:left;cur
 .anel b.cheio{font-size:16px}
 .anel.vazio{border:9px solid #E7E1D4;border-radius:50%}
 .caixas,.votos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.obs-voto{font-size:12px;color:var(--sub);margin:-6px 0 12px}
 .caixa{background:var(--suave);border-radius:12px;padding:10px 12px}
 .caixa b{display:block;font-size:20px;font-weight:800}
 .caixa span{font-size:12.5px;color:var(--sub)}
@@ -360,6 +362,19 @@ SALARIOS = {
         "mesa": [["Presidente", 18064], ["1º(ª) Secretário(a)", 13548]],
         "documento": "Tabela Padrão Remuneratório Vereadores — vigente para o exercício de 2026",
         "fonte": "https://www.santana.ap.leg.br/transparencia-old/gestao-de-pessoas/folha-de-pagamento-servidores/padrao-remuneratorio/tabela-remuneratoria-vereadores",
+        "rotulo": "tabela oficial da Câmara",
+        "nota": "O contador do topo é estimativa e usa a tabela de 2026 para todo o período.",
+    },
+    "porto-grande": {
+        "cadeiras": 11,
+        "valor": 5500,
+        "mesa": [],
+        "documento": "Lei Municipal nº 584/2024, que fixa o subsídio dos vereadores para 2025–2028",
+        "fonte": "https://sapl.portogrande.ap.leg.br/media/sapl/public/normajuridica/2024/492/lei_584_2024_-_fixa_o_subsidio_do_prefeito_vice-prefeito_vereadores....pdf",
+        "rotulo": "lei que fixa o salário",
+        "nota": ("A lei não prevê valor maior para a presidência. A partir de 2026 o valor é corrigido todo ano "
+                 "pela inflação (INPC), e a Câmara não publica o valor corrigido; por isso o contador usa "
+                 "R$ 5.500 e fica um pouco abaixo do valor real."),
     },
 }
 
@@ -367,6 +382,19 @@ SALARIOS = {
 def salario_mensal(sal):
     """Soma do mês: vereadores comuns + cargos da Mesa com acréscimo."""
     return (sal["cadeiras"] - len(sal["mesa"])) * sal["valor"] + sum(v for _, v in sal["mesa"])
+
+
+def abst_txt(vn):
+    a = vn.get("Abstenção", 0)
+    nv = sum(n for k, n in vn.items() if k not in ("Sim", "Não", "Abstenção"))
+    partes = ([f'{num(a)} abstenções'] if a else []) + ([f'{num(nv)} sem voto (inclui a presidência, que só vota para desempatar)'] if nv else [])
+    return (", além de " + " e ".join(partes)) if partes else ""
+
+
+def mesa_txt(sal):
+    if len(sal["mesa"]) < 2:
+        return ""
+    return f"; a presidência recebe {brl(sal['mesa'][0][1])} e a 1ª secretaria {brl(sal['mesa'][1][1])}"
 
 
 def brl(v):
@@ -459,9 +487,9 @@ def salario_de(v, sal):
     if not sal:
         return None
     c = (cargo_atual(v) or "").lower()
-    if c == "presidente":
+    if c == "presidente" and sal["mesa"]:
         return sal["mesa"][0][1]
-    if c.startswith("primeiro-secret") or c.startswith("1º secret") or c.startswith("1º(ª) secret"):
+    if len(sal["mesa"]) > 1 and c.startswith("primeiro-secret") or c.startswith("1º secret") or c.startswith("1º(ª) secret"):
         return sal["mesa"][1][1]
     return sal["valor"]
 
@@ -517,9 +545,16 @@ def cracha(i, v, d, sal, fotos):
 
     rv = v.get("resumo_votos") or {}
     sim = rv.get("Sim", 0)
-    nao = sum(n for k, n in rv.items() if k != "Sim")
+    # "Não votou" fica à parte: na presidência é a regra (só vota para desempatar).
+    nao = rv.get("Não", 0) + rv.get("Abstenção", 0)
+    nv = sum(n for k, n in rv.items() if k not in ("Sim", "Não", "Abstenção"))
+    obs_nv = ""
+    if nv:
+        pres = (cargo_atual(v) or "").lower() == "presidente"
+        obs_nv = (f'<p class="obs-voto">{num(nv)} vez{"es" if nv > 1 else ""} sem voto registrado'
+                  f'{" — na presidência, só se vota para desempatar" if pres else ""}.</p>')
     votos = (f'<div class="votos"><div class="caixa sim"><b>{num(sim)}</b><span>vezes sim</span></div>'
-             f'<div class="caixa nao"><b>{num(nao)}</b><span>{"não ou abstenção" if nao != rv.get("Não", 0) else "vezes não"}</span></div></div>')
+             f'<div class="caixa nao"><b>{num(nao)}</b><span>{"não ou abstenção" if rv.get("Abstenção") else "vezes não"}</span></div></div>{obs_nv}')
 
     fundo = FUNDOS_CRACHA[i % len(FUNDOS_CRACHA)]
     pct = pr["percentual"] if pr["percentual"] is not None else 999
@@ -564,11 +599,11 @@ def gerar_cidade(cid, d):
     if sal:
         mensal = salario_mensal(sal)
         dados_js["sal"] = {"mensal": mensal, "posse": leg["inicio"]}
-        mesa = " e ".join(f"{n.lower()} {brl(v)}" for n, v in sal["mesa"])
+        mesa = "".join(f"; {n.lower()} {brl(v)}" for n, v in sal["mesa"])
         bloco_sal = f"""<div class="salario">
 <p>Salário pago aos {sal['cadeiras']} vereadores desde a posse</p>
 <strong id="contador">{brl(0)}</strong>
-<small>e subindo agora · estimativa: {sal['cadeiras']} salários por mês ({brl(sal['valor'])} cada; {mesa}) desde {data_br(leg['inicio'])}. Valor bruto da <a href="{e(sal['fonte'])}" target="_blank" rel="noopener">tabela oficial da Câmara</a>, sem 13º nem verba indenizatória.</small>
+<small>e subindo agora · estimativa: {sal['cadeiras']} salários por mês ({brl(sal['valor'])} cada{mesa}) desde {data_br(leg['inicio'])}. Valor bruto da <a href="{e(sal['fonte'])}" target="_blank" rel="noopener">{e(sal['rotulo'])}</a>, sem 13º nem verba indenizatória.</small>
 </div>"""
     (pasta / "dados.js").write_text("window.RADAR=" + json.dumps(dados_js, ensure_ascii=False, separators=(",", ":")) + ";\n", encoding="utf-8")
 
@@ -617,7 +652,7 @@ def gerar_cidade(cid, d):
 <p class="olho">Só aqui</p>
 <h2>O problema que não some</h2>
 <p class="sub">Quando o mesmo pedido volta várias vezes para a mesma rua, é sinal de que o problema continua lá. O site da Câmara não mostra isso: nós cruzamos os pedidos um por um.</p>
-<div id="lista-rep" class="grade-rep"></div>
+{'<div id="lista-rep" class="grade-rep"></div>' if rep else '<p class="vazio-rep">Até agora, nenhuma rua recebeu o mesmo tipo de pedido 3 vezes ou mais. Quando isso acontecer, o caso aparece aqui.</p>'}
 <p class="nota">Pedido repetido não prova que a Prefeitura ignorou: pode ser outro trecho da mesma rua. Abra o cartão e leia os pedidos. Rua, bairro e tema são lidos automaticamente do texto oficial e podem falhar em textos confusos.</p>
 </section>
 
@@ -657,7 +692,7 @@ def gerar_cidade(cid, d):
 <div><h3>Tudo oficial</h3><p>Tudo sai do sistema da própria Câmara Municipal (<a href="{e(d['fonte'])}" target="_blank" rel="noopener">{e(d['fonte'].replace('https://', ''))}</a>). Nada é digitado à mão, e a regra é a mesma para todos os vereadores, de todos os partidos.</p></div>
 <div><h3>Presença</h3><p>Juntamos as três listas oficiais da Câmara: abertura da sessão, Ordem do Dia e ata. Sessão sem nenhum registro não entra na conta. A Câmara não registra licenças; quando um suplente do mesmo partido assume, o período sai da conta do titular.</p></div>
 <div><h3>Pedido não é obra feita</h3><p>Um pedido de melhoria é só um pedido. O sistema da Câmara não informa se a Prefeitura atendeu.</p></div>
-{f'<div><h3>Salário</h3><p>O valor vem da <a href="{e(sal["fonte"])}" target="_blank" rel="noopener">{e(sal["documento"])}</a>: {brl(sal["valor"])} por mês para cada vereador; a presidência recebe {brl(sal["mesa"][0][1])} e a 1ª secretaria {brl(sal["mesa"][1][1])}. Valor bruto, sem descontos. O contador do topo é estimativa e usa a tabela de 2026 para todo o período.</p></div>' if sal else ''}
+{f'<div><h3>Salário</h3><p>O valor vem da <a href="{e(sal["fonte"])}" target="_blank" rel="noopener">{e(sal["documento"])}</a>: {brl(sal["valor"])} por mês para cada vereador{mesa_txt(sal)}. Valor bruto, sem descontos. {e(sal["nota"])}</p></div>' if sal else ''}
 <div><h3>Votos</h3><p>Só entram as votações em que o sistema registra o voto de cada um: {num(sv['votacoes_nominais'])} de {num(sv['votacoes'])}. As outras são simbólicas.</p></div>
 <div><h3>Achou um erro?</h3><p>Abra a ficha oficial pelo link do crachá e compare. Se a Câmara corrigir o registro, o número daqui muda na atualização seguinte. <a href="como-funciona/">Veja todas as regras</a>.</p></div>
 </div>
@@ -731,7 +766,8 @@ def gerar_vereador(cid, d, v):
     # votos
     sv = d["sessoes"]
     contexto = (f'De {num(sv["votacoes"])} votações nesta legislatura, só {num(sv["votacoes_nominais"])} registram o voto de cada vereador — as demais são simbólicas. '
-                f'Nessas {num(sv["votacoes_nominais"])}, a Câmara registrou {num(sv["votos_nominais"].get("Sim", 0))} votos "sim" e {num(sv["votos_nominais"].get("Não", 0))} "não": quase tudo é aprovado por unanimidade.')
+                f'Nessas {num(sv["votacoes_nominais"])}, a Câmara registrou {num(sv["votos_nominais"].get("Sim", 0))} votos "sim" e {num(sv["votos_nominais"].get("Não", 0))} "não"'
+                f'{abst_txt(sv["votos_nominais"])}: quase tudo é aprovado.')
     if v["votos"]:
         linhas = "".join(
             f'<li>{data_br(x["data"])} — <span class="{"v-sim" if x["voto"] == "Sim" else "v-nao" if x["voto"] == "Não" else ""}">{e(x["voto"])}</span> · {e(x["materia"])}'

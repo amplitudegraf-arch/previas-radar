@@ -53,9 +53,46 @@ BAIRROS = {
         ("Centro", ["CENTRAL", "CENTRO"], False),
         ("Ilha de Santana", ["ILHA DE SANTANA"], True),
     ],
+    "porto-grande": [
+        ("Manoel Cortez", ["MANOEL CORTEZ", "MANOEL CORTES", "MANUEL CORTEZ"], True),
+        ("Nova Esperança", ["NOVA ESPERANCA", "NOVA ESPERANACA"], True),
+        ("Área 6", ["AREA 6", "AREA SEIS"], True),
+        ("Aeroporto", ["AEROPORTO"], False),
+        ("Vila Militar", ["VILA MILITAR", "AREA MILITAR"], True),
+        ("Vila Nova", ["VILA NOVA"], True),
+        ("Malvinas", ["MALVINAS"], True),
+        ("Brasil Tropical", ["BRASIL TROPICAL"], True),
+        ("Novo São José", ["NOVO SAO JOSE"], True),
+        ("São José", ["SAO JOSE"], False),
+        ("Copalma", ["COPALMA"], True),
+        ("Palmeiras", ["PALMEIRAS"], False),
+        ("Bairro Novo", ["BAIRRO NOVO"], True),
+        ("Centro", ["CENTRO"], False),
+        ("Cupixi", ["CUPIXI"], True),
+        ("Munguba", ["MUNGUBA", "MUNGUNBA"], True),
+        ("Nova Canaã", ["NOVA CANAA", "CANAA"], True),
+        ("Manoel Jacinto", ["MANOEL JACINTO", "MANUEL JACINTO"], True),
+        ("Nova Colina", ["NOVA COLINA"], True),
+        ("Matapi", ["MATAPI"], False),
+        ("Vila do Acapu", ["ACAPU"], True),
+        ("Campo Verde", ["CAMPO VERDE"], True),
+        ("Monte Tabor", ["MONTE TABOR"], True),
+        ("Monte Castelo", ["MONTE CASTELO"], True),
+        ("Peixe Boi", ["PEIXE BOI"], True),
+        ("Caieira", ["CAIERA", "CAIEIRA"], True),
+        ("KM 108", ["KM 108"], True),
+        ("KM 112", ["KM 112"], True),
+        ("KM 117", ["KM 117"], True),
+        ("KM 121", ["KM 121"], True),
+        ("KM 130", ["KM 130"], True),
+        ("KM 135", ["KM 135"], True),
+        ("KM 138", ["KM 138"], True),
+        ("KM 141", ["KM 141"], True),
+        ("KM 142", ["KM 142"], True),
+    ],
 }
 
-PALAVRA_BAIRRO = r"(?:BAIRROS?|CONJUNTO|LOTEAMENTO|RESIDENCIAL|COMUNIDADE|DISTRITO|LOCALIDADE)\s+(?:D[OAE]S?\s+)?"
+PALAVRA_BAIRRO = r"(?:BAIRROS?|CONJUNTO|LOTEAMENTO|RESIDENCIAL|COMUNIDADE|DISTRITO|LOCALIDADE|ASSENTAMENTO|VILA)\s+(?:D[OAE]S?\s+)?"
 
 
 def _padroes(cidade):
@@ -139,17 +176,20 @@ def chave_rua(rotulo):
 TEMAS = [
     ("Iluminação", ["ILUMINA", "LAMPADA", "LUMINARIA", "POSTEAMENTO", "REFLETOR"]),
     ("Água e esgoto", ["CSA", "AGUA POTAVEL", "ABASTECIMENTO DE AGUA", "FORNECIMENTO DE AGUA", "ESGOTO", "VAZAMENTO",
-                       "CANO ", "REDE DE AGUA", "POCO ", "CAIXA D"]),
+                       "CANO ", "REDE DE AGUA", "POCO ", "POCOS", "CAIXA D", "CISTERNA"]),
     ("Asfalto e buracos", ["ASFALT", "PAVIMENT", "TAPA-BURACO", "TAPA BURACO", "BURACO", "BLOQUETE", "TERRAPLAN",
-                           "RECAPEAMENTO", "PATROLAMENTO", "PATROL", "ENCASCALH", "MESCLA"]),
+                           "RECAPEAMENTO", "PATROLAMENTO", "PATROL", "ENCASCALH", "MESCLA", "RAMAL", "RAMAIS",
+                           "VICINAL", "PICARR"]),
     ("Pontes e passarelas", ["PONTE", "PASSARELA", "ESTIVA", "TRAPICHE"]),
     ("Drenagem e canais", ["DRENAGEM", "BUEIRO", "CANAL", "MEIO-FIO", "MEIO FIO", "SARJETA", "ALAGA", "VALA"]),
     ("Limpeza e poda", ["LIMPEZA", "CAPINA", "ROCAGEM", "ROCADA", "PODA", "LIXO", "ENTULHO", "COLETA", "TERRENO BALDIO"]),
     ("Trânsito", ["SINALIZA", "FAIXA DE PEDESTRE", "LOMBADA", "QUEBRA-MOLA", "QUEBRA MOLA", "SEMAFORO", "REDUTOR",
-                  "TRANSITO", "ONIBUS", "TRANSPORTE"]),
+                  "TRANSITO", "ONIBUS", "TRANSPORTE COLETIVO", "TRANSPORTE PUBLICO", "FAIXAS ELEVADAS"]),
     ("Saúde", ["SAUDE", "UBS", "MEDICO", "HOSPITAL", "ENFERMEIR", "MEDICAMENT", "AMBULANCIA", "VACINA", "SAMU"]),
-    ("Educação", ["ESCOLA", "EDUCACAO", "CRECHE", "PROFESSOR", "ALUNO", "MERENDA"]),
+    ("Educação", ["ESCOLA", "EDUCACAO", "CRECHE", "PROFESSOR", "ALUNO", "MERENDA", "ESTUDANTE"]),
     ("Praças, esporte e lazer", ["PRACA", "QUADRA", "CAMPO DE FUTEBOL", "ESPORT", "LAZER", "ACADEMIA", "PARQUE INFANTIL"]),
+    ("Agricultura e produção rural", ["AGRICULT", "AGRICOLA", "TRATOR", "PRODUTORES RURAIS", "PRODUTOR RURAL",
+                                      "INSUMOS", "IMPLEMENTOS", "CALCARIO", "MECANIZA", "PISCICULT", "PESCADOR", "FEIRA DO PRODUTOR"]),
     ("Segurança", ["POLICIA", "SEGURANCA PUBLICA", "VIATURA", "GUARDA MUNICIPAL", "VIDEOMONITORAMENTO", "CAMERAS"]),
 ]
 
@@ -175,7 +215,7 @@ SIGLAS = {"SEMOP", "PMS", "CSA", "SESA", "SEMSA", "UBS", "CMS", "AP", "SEME", "C
           "CEA", "DETRAN", "PM", "PMAP", "CBM", "CBMAP", "SEMED", "SEMAS", "SEMAST", "SEMAD", "SEMMA", "SEMTUR",
           "SEMDEC", "SEINF", "SEDUC", "SETRAP", "CAESA", "IAPEN", "PRF", "PF", "SUS", "CRAS", "CREAS", "CAPS", "EMEF",
           "EMEI", "LDO", "LOA", "PPA", "CPF", "INSS", "ONG", "BR", "AP-010", "CEP", "TV", "PRODAP", "SEPLAN", "DNIT",
-          "ANEEL", "SEMSU", "SEMSUR", "GEA", "PMA", "SANEAMENTO"}
+          "ANEEL", "SEMSU", "SEMSUR", "GEA", "PMA", "SANEAMENTO", "IFAP", "UNIFAP", "AMCEL", "TEA", "PMPG", "CMPG"}
 SIGLAS.discard("SANEAMENTO")
 _HONRA = r"(senhor|senhora|sr\.|sra\.|sr|sra|governador|governadora|deputad[oa] (?:estadual|federal)|senador|senadora|vereador|vereadora)"
 _PART = {"da", "de", "do", "das", "dos", "e"}
@@ -203,7 +243,7 @@ def legivel(texto, nomes=()):
         return m.group(1) + _cap_nome(nome)
     t = re.sub(r"((?:prefeit[oa]|secretári[oa]|governador[a]?|president[ea])[^,;]{0,60},\s+)([a-zà-ÿ][a-zà-ÿ ]{4,50}?)(?=,)", nome_apos_cargo, t)
     # nomes conhecidos: ruas, bairros, vereadores, cidades
-    for n in sorted(set(nomes) | {"Santana", "Amapá", "Macapá", "Brasil", "Ilha de Santana", "Governo do Estado"}, key=len, reverse=True):
+    for n in sorted(set(nomes) | {"Santana", "Amapá", "Macapá", "Brasil", "Ilha de Santana", "Governo do Estado", "Porto Grande", "Codevasf"}, key=len, reverse=True):
         if n:
             t = re.sub(r"(?<![a-zà-ÿ])" + re.escape(n.lower()) + r"(?![a-zà-ÿ])", n, t)
     # siglas: conhecidas, ou que aparecem depois de travessão ou entre parênteses

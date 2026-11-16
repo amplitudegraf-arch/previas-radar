@@ -26,6 +26,11 @@ CAMARAS = {
         "legislatura": 10,          # 2025–2028
         "ano_inicio": 2025,
     },
+    "porto-grande": {
+        "base": "https://sapl.portogrande.ap.leg.br/api",
+        "legislatura": 9,           # 2025–2028
+        "ano_inicio": 2025,
+    },
 }
 
 # (arquivo, caminho, parâmetros fixos)

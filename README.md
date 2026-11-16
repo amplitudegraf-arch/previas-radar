@@ -2,7 +2,9 @@
 
 O que cada vereador faz, só com dados oficiais das Câmaras Municipais: presença nas sessões, propostas apresentadas e votos. Sem nota e sem opinião; cada número tem link para a fonte oficial.
 
-No ar: **https://www.previas26.com.br/ap/santana/radar/**
+No ar:
+- Santana: **https://www.previas26.com.br/ap/santana/radar/**
+- Porto Grande: **https://www.previas26.com.br/ap/porto-grande/radar/**
 
 Inspirado no manual *Como criar o Radar da sua cidade* (Radar PTlândia, Hortolândia-SP).
 
@@ -21,10 +23,10 @@ O robô (`.github/workflows/atualizar.yml`) roda todo dia às 6h de Brasília e 
 Rodar no computador:
 
 ```
-python3 coletor/sapl.py santana
+python3 coletor/sapl.py santana        # ou porto-grande
 python3 processar/sapl.py santana
 python3 verificar.py santana
-RADAR_LOCAL=1 python3 site/gerar.py santana   # links com index.html, para abrir do disco
+RADAR_LOCAL=1 python3 site/gerar.py santana porto-grande   # sempre todas as cidades; links com index.html, para abrir do disco
 open publico/ap/santana/radar/index.html
 ```
 

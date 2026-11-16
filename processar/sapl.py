@@ -33,6 +33,13 @@ CAMARAS = {
         "legislatura": 10,
         "site": "https://sapl.santana.ap.leg.br",
     },
+    "porto-grande": {
+        "nome": "Porto Grande",
+        "uf": "AP",
+        "camara": "Câmara Municipal de Porto Grande",
+        "legislatura": 9,
+        "site": "https://sapl.portogrande.ap.leg.br",
+    },
 }
 
 # ----------------------------------------------------------------------------
@@ -56,7 +63,7 @@ TIPOS_FORA = (
 
 TIPOS_LEI = (
     "PROJETO DE LEI", "PROJETO DE DECRETO", "PROJETO DE RESOLUCAO",
-    "PROPOSTA DE EMENDA",
+    "PROPOSTA DE EMENDA", "EMENDA IMPOSITIVA",
 )
 
 PALAVRAS_HOMENAGEM = (

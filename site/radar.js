@@ -18,6 +18,7 @@
     "Saúde": ["#A4456A", "#F8E9EF", '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>'],
     "Educação": ["#5B4B9A", "#ECE9F6", '<path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/>'],
     "Praças, esporte e lazer": ["#3C7A3A", "#E8F2E3", '<circle cx="12" cy="12" r="9"/><path d="M12 3a15 15 0 0 0 0 18M3 12h18"/>'],
+    "Agricultura e produção rural": ["#5E7A1F", "#EEF3E0", '<path d="M12 22V10M12 10c0-4 3-7 7-7 0 4-3 7-7 7zM12 14c0-3-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z"/>'],
     "Segurança": ["#283C59", "#E8EEF6", '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'],
     "Outros pedidos": ["#5D6676", "#EEF0F3", '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'],
     "Cobrança": ["#B9722A", "#FBF1E4", '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.2A8.4 8.4 0 1 1 21 11.5z"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2.2-2.4 3.2M12 16h.01"/>']
@@ -206,7 +207,8 @@
     "Iluminação": "iluminação", "Asfalto e buracos": "asfalto e conserto de buracos", "Limpeza e poda": "limpeza e poda",
     "Pontes e passarelas": "conserto de ponte ou passarela", "Drenagem e canais": "drenagem", "Água e esgoto": "conserto de água e esgoto",
     "Trânsito": "melhoria no trânsito", "Saúde": "melhoria na saúde", "Educação": "melhoria em escola",
-    "Praças, esporte e lazer": "melhoria em praça e área de lazer", "Segurança": "segurança"
+    "Praças, esporte e lazer": "melhoria em praça e área de lazer", "Segurança": "segurança",
+    "Agricultura e produção rural": "apoio à produção rural"
   };
   var SITE = /^https?:/.test(location.protocol) ? location.origin + location.pathname : "";
   var folha = document.getElementById("folha");

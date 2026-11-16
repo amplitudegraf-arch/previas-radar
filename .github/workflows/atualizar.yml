@@ -36,21 +36,31 @@ jobs:
       - name: Reaproveitar atas já baixadas
         uses: actions/cache@v4
         with:
-          path: dados/bruto/santana/atas
-          key: atas-santana-${{ github.run_id }}
-          restore-keys: atas-santana-
+          path: |
+            dados/bruto/santana/atas
+            dados/bruto/porto-grande/atas
+          key: atas-${{ github.run_id }}
+          restore-keys: |
+            atas-
+            atas-santana-
 
-      - name: Coletar dados da Câmara de Santana
-        run: python3 coletor/sapl.py santana
+      - name: Coletar dados das Câmaras
+        run: |
+          python3 coletor/sapl.py santana
+          python3 coletor/sapl.py porto-grande
 
       - name: Processar
-        run: python3 processar/sapl.py santana
+        run: |
+          python3 processar/sapl.py santana
+          python3 processar/sapl.py porto-grande
 
       - name: Conferir antes de publicar
-        run: python3 verificar.py santana
+        run: |
+          python3 verificar.py santana
+          python3 verificar.py porto-grande
 
       - name: Gerar o site
-        run: python3 site/gerar.py santana
+        run: python3 site/gerar.py santana porto-grande
 
       - uses: actions/configure-pages@v5
 

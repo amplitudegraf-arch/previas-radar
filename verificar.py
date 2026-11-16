@@ -8,7 +8,10 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent
-MINIMOS = {"santana": {"vereadores": 15, "sessoes": 100, "propostas": 3000, "votacoes_nominais": 200}}
+MINIMOS = {
+    "santana": {"vereadores": 15, "sessoes": 100, "propostas": 3000, "votacoes_nominais": 200},
+    "porto-grande": {"vereadores": 11, "sessoes": 60, "propostas": 800, "votacoes_nominais": 90},
+}
 
 
 def main(cid):
