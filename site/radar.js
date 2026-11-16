@@ -157,7 +157,7 @@
       var v = R.ver[+x[0]], nome = el("span", "nome");
       nome.appendChild(document.createTextNode(v.n));
       if (v.p) nome.appendChild(el("small", null, " · " + v.p));
-      return { tag: "a", href: v.s + "/index.html", esq: avatar(v), nome: nome, n: x[1] };
+      return { tag: "a", href: v.s + (location.protocol === "file:" ? "/index.html" : "/"), esq: avatar(v), nome: nome, n: x[1] };
     });
     col.appendChild(bloco("Quem mais propôs", quem, true));
     var oque = contar(lista, function (p) { return [temaDe(p)]; }).slice(0, 6).map(function (x) {

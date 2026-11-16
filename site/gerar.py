@@ -6,6 +6,7 @@ Uso:  python3 site/gerar.py santana
 
 import html
 import json
+import os
 import re
 import shutil
 import sys
@@ -67,9 +68,11 @@ def num(n):
 
 
 def _links_locais(html_txt):
-    """Links internos apontam para .../index.html, para o site abrir direto
-    do disco (duplo clique) e também em qualquer hospedagem estática."""
+    """Na publicação, links internos ficam limpos (.../santana/radar/).
+    Com RADAR_LOCAL=1 apontam para .../index.html, para abrir do disco (duplo clique)."""
     import re as _re
+    if not os.environ.get("RADAR_LOCAL"):
+        return html_txt
     def troca(m):
         url, ancora = m.group(1), m.group(2) or ""
         if url == "":
