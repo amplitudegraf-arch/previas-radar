@@ -1,0 +1,63 @@
+name: Atualizar e publicar o Radar
+
+on:
+  schedule:
+    - cron: "0 9 * * *"      # todo dia às 6h de Brasília
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar leitor de PDF (atas)
+        run: sudo apt-get update -q && sudo apt-get install -y -q poppler-utils
+
+      - name: Reaproveitar atas já baixadas
+        uses: actions/cache@v4
+        with:
+          path: dados/bruto/santana/atas
+          key: atas-santana-${{ github.run_id }}
+          restore-keys: atas-santana-
+
+      - name: Coletar dados da Câmara de Santana
+        run: python3 coletor/sapl.py santana
+
+      - name: Processar
+        run: python3 processar/sapl.py santana
+
+      - name: Conferir antes de publicar
+        run: python3 verificar.py santana
+
+      - name: Gerar o site
+        run: python3 site/gerar.py santana
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publico
+
+      - name: Publicar
+        id: publicar
+        uses: actions/deploy-pages@v4

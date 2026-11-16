@@ -1,0 +1,6 @@
+# gerado pelo robô a cada execução
+dados/bruto/
+dados/site/
+publico/
+__pycache__/
+.DS_Store
