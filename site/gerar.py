@@ -99,7 +99,7 @@ def _pagina(titulo, corpo, descricao="", raiz="../", voltar=None):
 <link rel="icon" type="image/png" href="{raiz}favicon.png">
 </head>
 <body>
-<header class="topo"><a href="{raiz}" class="marca">PRÉVIAS <span>Radar</span></a></header>
+<header class="topo"><a href="{raiz}" class="marca"><img src="{raiz}logo-previas.png" alt="Prévias" width="105" height="28"><span>Radar</span></a></header>
 <main>
 {volta}
 {corpo}
@@ -120,8 +120,9 @@ body{margin:0;background:var(--fundo);color:var(--txt);font:16px/1.55 system-ui,
 a{color:var(--azul)}
 main{max-width:760px;margin:0 auto;padding:16px}
 .topo{background:var(--azul);padding:12px 16px}
-.marca{color:#F5EFE3;text-decoration:none;font-weight:800;letter-spacing:.06em}
-.marca span{font-weight:500;opacity:.8;letter-spacing:0}
+.marca{display:inline-flex;align-items:center;gap:10px;color:#F5EFE3;text-decoration:none}
+.marca img{display:block;height:28px;width:auto}
+.marca span{font-weight:600;opacity:.8;padding-left:10px;border-left:1px solid rgba(245,239,227,.35);line-height:20px}
 h1{font-size:26px;line-height:1.2;margin:12px 0 4px}
 h2{font-size:20px;margin:28px 0 8px}
 .sub{color:var(--sub);margin:0 0 12px}
@@ -806,9 +807,9 @@ def main(lista):
         f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url={SITE_URL}">'
         f'<link rel="canonical" href="{SITE_URL}"><title>Radar Prévias</title><a href="{SITE_URL}">Radar Prévias</a>\n', encoding="utf-8")
     (PUBLICO / ".nojekyll").write_text("", encoding="utf-8")
-    fav = RAIZ / "site" / "favicon.png"
-    if fav.exists():
-        shutil.copy(fav, BASE / "favicon.png")
+    for arq in ("favicon.png", "logo-previas.png"):
+        if (RAIZ / "site" / arq).exists():
+            shutil.copy(RAIZ / "site" / arq, BASE / arq)
     cidades = {}
     for cid in lista:
         d = json.loads((RAIZ / "dados" / "site" / f"{cid}.json").read_text(encoding="utf-8"))
