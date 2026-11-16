@@ -24,7 +24,7 @@ Rodar no computador:
 python3 coletor/sapl.py santana
 python3 processar/sapl.py santana
 python3 verificar.py santana
-python3 site/gerar.py santana
+RADAR_LOCAL=1 python3 site/gerar.py santana   # links com index.html, para abrir do disco
 open publico/ap/santana/radar/index.html
 ```
 
