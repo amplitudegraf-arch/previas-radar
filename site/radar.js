@@ -105,9 +105,10 @@
     return Object.keys(c).map(function (k) { return [k, c[k]]; }).sort(function (a, b) { return b[1] - a[1]; });
   }
 
-  function bloco(titulo, linhas, comBarra) {
+  function bloco(titulo, linhas, comBarra, legenda) {
     var b = el("div", "bloco");
     b.appendChild(el("h3", null, titulo));
+    if (legenda) b.appendChild(legenda);
     var max = linhas.length ? linhas[0].n : 1;
     linhas.forEach(function (L) {
       var r = el(L.tag || "div", "rank");
@@ -119,6 +120,19 @@
       if (comBarra) {
         var tr = el("span", "trilho"), f = el("span");
         f.style.width = (L.n / max * 100).toFixed(1) + "%";
+        if (L.partes) {
+          // barra dividida pelo tipo de pedido, nas mesmas cores de "Que tipo de proposta?"
+          f.className = "pilha";
+          L.partes.forEach(function (P) {
+            if (!P.n) return;
+            var s = el("i");
+            s.style.width = (P.n / L.n * 100).toFixed(1) + "%";
+            s.style.background = P.c;
+            s.title = P.nome + ": " + fmt(P.n);
+            f.appendChild(s);
+          });
+          r.title = L.partes.filter(function (P) { return P.n; }).map(function (P) { return P.nome + ": " + fmt(P.n); }).join(" · ");
+        }
         tr.appendChild(f); r.appendChild(tr);
       }
       b.appendChild(r);
@@ -158,9 +172,22 @@
       var v = R.ver[+x[0]], nome = el("span", "nome");
       nome.appendChild(document.createTextNode(v.n));
       if (v.p) nome.appendChild(el("small", null, " · " + v.p));
-      return { tag: "a", href: v.s + (location.protocol === "file:" ? "/index.html" : "/"), esq: avatar(v), nome: nome, n: x[1] };
+      var partes = (R.grupos || []).map(function (G) {
+        return { nome: G.n, c: G.c, n: lista.filter(function (p) { return p.g === G.g && p.a.map(String).indexOf(x[0]) >= 0; }).length };
+      });
+      return { tag: "a", href: v.s + (location.protocol === "file:" ? "/index.html" : "/"), esq: avatar(v), nome: nome, n: x[1], partes: R.grupos ? partes : null };
     });
-    col.appendChild(bloco("Quem mais propôs", quem, true));
+    var leg = null;
+    if (R.grupos) {
+      leg = el("div", "legenda-q");
+      R.grupos.forEach(function (G) {
+        var it = el("span"), q = el("i");
+        q.style.background = G.c;
+        it.appendChild(q); it.appendChild(document.createTextNode(G.n));
+        leg.appendChild(it);
+      });
+    }
+    col.appendChild(bloco("Quem mais propôs", quem, true, leg));
     var oque = contar(lista, function (p) { return [temaDe(p)]; }).slice(0, 6).map(function (x) {
       return { esq: icone(x[0]), nome: el("span", "nome", x[0]), n: x[1] };
     });

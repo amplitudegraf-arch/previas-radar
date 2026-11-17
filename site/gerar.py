@@ -217,6 +217,11 @@ input[type=search]:focus,select:focus{outline:2px solid var(--azul);border-color
 .rank{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--linha);text-decoration:none;color:inherit;font-size:15px}
 .rank .trilho{grid-column:1/-1;height:6px;background:var(--suave);border-radius:3px;overflow:hidden}
 .rank .trilho span{display:block;height:100%;background:var(--azul);border-radius:3px}
+.rank .trilho .pilha{display:flex;background:none;border-radius:3px;overflow:hidden}
+.rank .trilho .pilha i{display:block;height:100%}
+.legenda-q{display:flex;flex-wrap:wrap;gap:4px 14px;margin:-2px 0 8px;font-size:12px;color:var(--sub)}
+.legenda-q span{display:inline-flex;align-items:center;gap:6px}
+.legenda-q i{width:10px;height:10px;border-radius:2px;display:inline-block}
 .rank b{font-variant-numeric:tabular-nums}
 .pedido{border-top:1px solid var(--linha);padding:12px 0;font-size:15px}
 .pedido small{color:var(--sub);display:block;margin-top:4px}
@@ -268,6 +273,7 @@ section h2{font-size:clamp(28px,6vw,42px);font-weight:800;letter-spacing:-.02em;
 .rank{grid-template-columns:auto 1fr auto;column-gap:10px;border-top:0;padding:7px 0}
 .rank .trilho{grid-column:2/-1;height:5px;background:var(--suave)}
 .rank .trilho span{background:var(--azul)}
+.rank .trilho .pilha{background:none}
 .rank .nome{font-size:14.5px;line-height:1.25}
 .rank .nome small{color:var(--sub)}
 .av{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--areia);flex:none;display:inline-block;vertical-align:middle}
@@ -702,7 +708,8 @@ def gerar_cidade(cid, d):
     # fora porque não dá para garantir que não sejam números pessoais.
     ver_js = [{"s": v["slug"], "n": v["nome"], "p": v["partido"] or "", "f": fotos[i], "e": v.get("email") or "",
                "x": sexo.get(v["id"], "")} for i, v in enumerate(d["vereadores"])]
-    dados_js = {"pedidos": pedidos, "rep": rep, "ver": ver_js}
+    dados_js = {"pedidos": pedidos, "rep": rep, "ver": ver_js,
+                "grupos": [{"g": k, "n": d["grupos"][k], "c": CORES_GRUPO[k]} for k in ("melhoria", "cobranca")]}
     bloco_sal = ""
     if sal:
         mensal = salario_mensal(sal)
