@@ -208,6 +208,7 @@ def main(cidade):
         if j["sessao_plenaria"] in sessoes:
             justificadas[j["sessao_plenaria"]][j["parlamentar"]] = tipos_just.get(j["tipo_ausencia"], "Justificada")
     atas_lidas, atas_sem_lista = 0, []
+    acrescidos = {}
     for pdf in sorted((bruto / "atas").glob("*.pdf")):
         sid = int(pdf.stem)
         if sid not in sessoes:
@@ -219,6 +220,10 @@ def main(cidade):
         atas_lidas += 1
         ids, _ = atas.casar_nomes(r["presentes"], nomes_parl)
         presentes[sid] |= ids
+        # chegou depois da abertura ou discursou: estava na sessão
+        extra, _ = atas.casar_nomes(r.get("outros_presentes", []), nomes_parl)
+        acrescidos[sid] = extra - presentes[sid]
+        presentes[sid] |= extra
         jids, _ = atas.casar_nomes(r["justificados"], nomes_parl)
         for pid in jids:
             justificadas[sid].setdefault(pid, "Justificada na ata")
@@ -428,6 +433,7 @@ def main(cidade):
         "sessoes": {
             "com_registro_presenca": len(sessoes_com_registro),
             "atas_lidas": atas_lidas,
+            "presencas_so_por_oradores": sum(len(x) for x in acrescidos.values()),
             "posses_suplentes": posses,
             "votacoes": len(votacoes_leg),
             "votacoes_nominais": len(nominais),
@@ -446,6 +452,7 @@ def main(cidade):
     print(f"sessões com presença registrada: {len(sessoes_com_registro)} | sem registro: {len(sessoes_sem_registro)}")
     print(f"votações: {len(votacoes_leg)} | nominais: {len(nominais)} | votos: {dict(total_votos)} | votos de quem não consta na lista de presença: {votos_sem_presenca}")
     print(f"atas lidas: {atas_lidas} | atas sem lista: {atas_sem_lista} | posses de suplentes: {posses}")
+    print("presenças vindas só de oradores/ordem do dia:", {s: sorted(nomes_parl[i] for i in x) for s, x in acrescidos.items() if x})
     print(f"{'vereador':28s} {'partido':10s} {'tit':3s} {'pres%':>6s} {'cons':>4s} {'pres':>4s} {'aus':>4s} {'just':>4s} {'afast':>5s}  " + " ".join(f"{g[:5]:>5s}" for g in GRUPOS) + "  votos")
     for v in saida["vereadores"]:
         pr = v["presenca"]

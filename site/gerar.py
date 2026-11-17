@@ -138,8 +138,11 @@ h2{font-size:20px;margin:28px 0 8px}
 .card b{display:block;line-height:1.25}
 .card small{color:var(--sub)}
 .perfil{display:flex;gap:16px;align-items:center;margin:8px 0 4px}
+.perfil>div{min-width:0}
+main a,main small,main p{overflow-wrap:anywhere}
 .perfil .foto{width:88px;height:88px}
-.numeros{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}
+.numeros{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:10px;margin:12px 0}
+@media (max-width:420px){.numeros{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .numero{background:var(--suave);border-radius:10px;padding:12px}
 .numero strong{display:block;font-size:26px;line-height:1.1}
 .numero span{font-size:14px;color:var(--sub)}
@@ -690,7 +693,7 @@ def gerar_cidade(cid, d):
 <h2>De onde vêm os números</h2>
 <div class="transp">
 <div><h3>Tudo oficial</h3><p>Tudo sai do sistema da própria Câmara Municipal (<a href="{e(d['fonte'])}" target="_blank" rel="noopener">{e(d['fonte'].replace('https://', ''))}</a>). Nada é digitado à mão, e a regra é a mesma para todos os vereadores, de todos os partidos.</p></div>
-<div><h3>Presença</h3><p>Juntamos as três listas oficiais da Câmara: abertura da sessão, Ordem do Dia e ata. Sessão sem nenhum registro não entra na conta. A Câmara não registra licenças; quando um suplente do mesmo partido assume, o período sai da conta do titular.</p></div>
+<div><h3>Presença</h3><p>Juntamos as listas oficiais da Câmara (abertura da sessão, Ordem do Dia e ata) e a lista de oradores da ata: quem discursou estava lá. Sessão sem nenhum registro não entra na conta. A Câmara não registra licenças; quando um suplente do mesmo partido assume, o período sai da conta do titular.</p></div>
 <div><h3>Pedido não é obra feita</h3><p>Um pedido de melhoria é só um pedido. O sistema da Câmara não informa se a Prefeitura atendeu.</p></div>
 {f'<div><h3>Salário</h3><p>O valor vem da <a href="{e(sal["fonte"])}" target="_blank" rel="noopener">{e(sal["documento"])}</a>: {brl(sal["valor"])} por mês para cada vereador{mesa_txt(sal)}. Valor bruto, sem descontos. {e(sal["nota"])}</p></div>' if sal else ''}
 <div><h3>Votos</h3><p>Só entram as votações em que o sistema registra o voto de cada um: {num(sv['votacoes_nominais'])} de {num(sv['votacoes'])}. As outras são simbólicas.</p></div>
@@ -743,7 +746,7 @@ def gerar_vereador(cid, d, v):
 <div class="numero"><strong>{pr['justificada']}</strong><span>ausências justificadas</span></div>
 <div class="numero"><strong>{pr['ausente']}</strong><span>ausências sem justificativa registrada</span></div>
 </div>
-<p class="sub" style="font-size:14px">* Conta do Prévias: sessões presente ÷ sessões consideradas. Juntamos as três listas de presença oficiais da Câmara (abertura da sessão, Ordem do Dia e ata). <a href="../como-funciona/">Entenda</a>.</p>
+<p class="sub" style="font-size:14px">* Conta do Prévias: sessões presente ÷ sessões consideradas. Juntamos as listas de presença oficiais da Câmara (abertura da sessão, Ordem do Dia e ata) e os oradores registrados na ata. <a href="../como-funciona/">Entenda</a>.</p>
 {afast}
 <details><summary>Ausências justificadas <small>({len(jus)})</small></summary><ul class="itens">{''.join(li(x) for x in jus) or '<li>Nenhuma.</li>'}</ul></details>
 <details><summary>Ausências sem justificativa registrada <small>({len(aus)})</small></summary><ul class="itens">{''.join(li(x) for x in aus) or '<li>Nenhuma.</li>'}</ul></details>
@@ -774,7 +777,9 @@ def gerar_vereador(cid, d, v):
             f'<br>{e(ementa_legivel(x["ementa"]))}<small>Placar: {x["placar"]["sim"]} sim, {x["placar"]["nao"]} não, {x["placar"]["abstencao"]} abstenções · '
             f'<a href="{e(x["fonte"])}" target="_blank" rel="noopener">ver matéria</a> · <a href="{e(x["fonte_sessao"])}" target="_blank" rel="noopener">ver sessão</a></small></li>' for x in v["votos"])
         rv = ", ".join(f'{n} "{k.lower()}"' for k, n in sorted(v["resumo_votos"].items(), key=lambda kv: -kv[1]))
-        bloco_votos = f'<p class="sub">{e(contexto)}</p><p>{e(v["nome"])} tem {num(len(v["votos"]))} votos registrados um a um ({e(rv)}).</p><details><summary>Ver todos os votos <small>({num(len(v["votos"]))})</small></summary><ul class="itens">{linhas}</ul></details>'
+        obs_pres = (" Na presidência, só se vota para desempatar; por isso tantos registros sem voto."
+                    if (cargo_atual(v) or "").lower() == "presidente" and (v.get("resumo_votos") or {}).get("Não Votou") else "")
+        bloco_votos = f'<p class="sub">{e(contexto)}</p><p>{e(v["nome"])} tem {num(len(v["votos"]))} votos registrados um a um ({e(rv)}).{obs_pres}</p><details><summary>Ver todos os votos <small>({num(len(v["votos"]))})</small></summary><ul class="itens">{linhas}</ul></details>'
     else:
         bloco_votos = f'<p class="sub">{e(contexto)}</p><p>Não há votos de {e(v["nome"])} registrados um a um nesta legislatura.</p>'
 
@@ -805,7 +810,7 @@ def gerar_como_funciona(cid, d):
 <h1>Como os números são calculados</h1>
 <p>Todos os dados vêm do sistema oficial da {e(d['camara'])} (<a href="{e(d['fonte'])}" target="_blank" rel="noopener">{e(d['fonte'].replace('https://', ''))}</a>), baixados automaticamente. Usamos a mesma regra para todos os vereadores, de todos os partidos.</p>
 <h2>Presença</h2>
-<p>A Câmara publica a presença em três lugares: a lista de abertura da sessão, a lista da Ordem do Dia e a lista que sai na ata da sessão (PDF). Elas nem sempre batem — em algumas sessões a ata tem nomes que não estão nas outras listas. <b>Juntamos as três</b>: se o vereador aparece em qualquer uma, conta como presente. Conferência: todos os {num(d['sessoes']['votacoes_nominais'])} registros de votação nominal são de vereadores que constam como presentes.</p>
+<p>A Câmara publica a presença em três lugares: a lista de abertura da sessão, a lista da Ordem do Dia e a lista que sai na ata da sessão (PDF). Elas nem sempre batem — em algumas sessões a ata tem nomes que não estão nas outras listas. <b>Juntamos as três</b>: se o vereador aparece em qualquer uma, conta como presente. Também conta como presente quem a ata registra como orador da sessão — houve casos de vereador que discursou mas não estava na lista de presença ({num(d["sessoes"].get("presencas_so_por_oradores", 0))} nesta legislatura). Conferência: todos os {num(d['sessoes']['votacoes_nominais'])} registros de votação nominal são de vereadores que constam como presentes.</p>
 <p>Só contam as sessões em que a Câmara registrou a presença de pelo menos um vereador ({d['sessoes']['com_registro_presenca']} sessões) e que aconteceram durante o mandato. <b>Dado ausente não é falta:</b> sessão sem nenhum registro não entra na conta.</p>
 <p><b>Ausência justificada</b> é a que a Câmara registrou com motivo (saúde, viagem, missão oficial etc.), no sistema ou na ata. Ela aparece separada, mas a porcentagem de presença considera só as sessões em que o vereador esteve presente.</p>
 <p><b>Licenças:</b> a Câmara não registra licenças no sistema. Como o suplente é sempre do mesmo partido do titular que substitui, quando um suplente está em exercício e o titular do mesmo partido não aparece em nenhuma sessão do período, tratamos esse período como provável afastamento e ele sai da conta — e o mesmo vale para o suplente depois que o titular volta. Isso é uma dedução do Prévias e está escrito na página de cada vereador afetado.</p>
