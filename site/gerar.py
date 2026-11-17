@@ -83,12 +83,18 @@ def _links_locais(html_txt):
     return _re.sub(r'href="((?:\.\./|[a-z0-9-]+/)*)(#[^"]*)?"', troca, html_txt)
 
 
-def pagina(titulo, corpo, descricao="", raiz="../", voltar=None):
-    return _links_locais(_pagina(titulo, corpo, descricao, raiz, voltar))
+DESCRICAO_PADRAO = "O que cada vereador faz, só com dados oficiais das Câmaras: presença, propostas e votos. Sem nota e sem opinião."
 
 
-def _pagina(titulo, corpo, descricao="", raiz="../", voltar=None):
+def pagina(titulo, corpo, descricao="", raiz="../", voltar=None, onde=None, imagem="og/ap.png"):
+    return _links_locais(_pagina(titulo, corpo, descricao, raiz, voltar, onde, imagem))
+
+
+def _pagina(titulo, corpo, descricao="", raiz="../", voltar=None, onde=None, imagem="og/ap.png"):
     volta = f'<a class="voltar" href="{e(voltar[0])}">← {e(voltar[1])}</a>' if voltar else ""
+    descricao = descricao or DESCRICAO_PADRAO
+    rel = "" if onde is None else onde.relative_to(BASE).as_posix()
+    url = SITE_URL + (rel + "/" if rel and rel != "." else "")
     return f"""<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -96,6 +102,17 @@ def _pagina(titulo, corpo, descricao="", raiz="../", voltar=None):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(titulo)}</title>
 <meta name="description" content="{e(descricao)}">
+<link rel="canonical" href="{e(url)}">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Prévias — Radar">
+<meta property="og:title" content="{e(titulo)}">
+<meta property="og:description" content="{e(descricao)}">
+<meta property="og:url" content="{e(url)}">
+<meta property="og:image" content="{SITE_URL}{imagem}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="{raiz}estilo.css">
@@ -108,7 +125,7 @@ def _pagina(titulo, corpo, descricao="", raiz="../", voltar=None):
 {corpo}
 </main>
 <footer class="rodape">
-<p>O Radar mostra só dados oficiais publicados pelas Câmaras. Não damos nota nem opinião.</p>
+<p><a href="{raiz}#como">Como coletamos os dados</a> · <a href="https://www.previas26.com.br/">Prévias — transparência política para todos</a></p>
 <p>Achou um erro? <a href="{CONTATO_ERRO}" target="_blank" rel="noopener">Avise pelo Instagram @previas.ap</a> — corrigimos rápido.</p>
 </footer>
 </body>
@@ -205,6 +222,7 @@ input[type=search]:focus,select:focus{outline:2px solid var(--azul);border-color
 :root{--ink:#1E2C42;--azul:#283C59;--bege:#F5EFE3;--areia:#EFE7D8;--ouro:#B8860B;--alerta:#B9472E;--linha:#E6E1D6;--suave:#F6F3EC;--sub:#5D6676;--sombra:0 1px 2px rgba(30,44,66,.06),0 6px 18px rgba(30,44,66,.06)}
 body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#FFFDF9}
 main{max-width:1040px}
+.rodape{max-width:1040px;box-sizing:border-box}
 h1,h2,h3,.titulo,.stats strong,.salario strong,.total strong,.rep .vezes,.grupo strong,.cracha h3,.caixa b,.anel b{font-family:Archivo,Inter,system-ui,sans-serif}
 .titulo{font-size:clamp(44px,11vw,84px);font-weight:900;letter-spacing:-.03em;line-height:.95;margin:14px 0 10px;color:var(--azul);text-transform:uppercase}
 .titulo span{color:var(--ouro);display:block}
@@ -342,6 +360,29 @@ button.rank{font:inherit;background:none;border:0;width:100%;text-align:left;cur
 }
 table{border-collapse:collapse;width:100%;font-size:15px}
 td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--linha);vertical-align:top}
+
+/* início do Radar AP */
+.busca-ver{margin:20px 0 8px}
+.busca-ver label{display:block;font-weight:700;margin-bottom:6px}
+.busca-ver input{width:100%;box-sizing:border-box;font:inherit;padding:14px 16px;border:1.5px solid #1E2C42;border-radius:12px;background:#fff}
+.r-ver{list-style:none;margin:6px 0 0;padding:0}
+.r-ver a{display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:10px;text-decoration:none;color:inherit}
+.r-ver a:hover,.r-ver a:focus{background:#F5EFE3}
+.r-ver img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+.r-ver b{display:block}.r-ver small{color:var(--sub)}
+.r-ver .nada{padding:8px 10px;color:var(--sub)}
+.cidades{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:14px;margin:12px 0 8px}
+.cidade{display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:16px;background:#283C59;color:#F5EFE3;text-decoration:none}
+.cidade:hover,.cidade:focus{background:#1E2C42}
+.cid-nome{font:900 28px/1 Archivo,sans-serif;text-transform:uppercase;color:#fff}
+.cid-nome small{font-size:16px;color:#B8860B;text-transform:none}
+.cid-num{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cid-num span{font-size:12px;line-height:1.3;opacity:.85}
+.cid-num b{display:block;font:800 22px/1.1 Archivo,sans-serif;color:#fff;opacity:1}
+.cid-data{font-size:12px;opacity:.7}
+.cid-ir{font-weight:700;color:#E8C46A}
+.faltam{list-style:none;padding:0;margin:8px 0;display:flex;flex-wrap:wrap;gap:8px}
+.faltam li{padding:6px 12px;border-radius:999px;background:#EFEBE3;color:#6B6458;font-size:14px}
 """
 
 
@@ -708,7 +749,8 @@ def gerar_cidade(cid, d):
 <script src="{R}radar.js"></script>
 """
     (pasta / "index.html").write_text(pagina(f"Radar {d['cidade']}-{d['uf']} — vereadores — Prévias", corpo,
-        f"O que cada vereador de {d['cidade']}-{d['uf']} fez desde a posse: pedidos por bairro, presença, propostas e votos, só com dados oficiais.", raiz=R), encoding="utf-8")
+        f"O que cada vereador de {d['cidade']}-{d['uf']} fez desde a posse: pedidos por bairro, presença, propostas e votos, só com dados oficiais.", raiz=R,
+        onde=pasta, imagem=f"og/{cid}.png"), encoding="utf-8")
 
     for v in d["vereadores"]:
         gerar_vereador(cid, d, v)
@@ -797,7 +839,7 @@ def gerar_vereador(cid, d, v):
 """
     (pasta / "index.html").write_text(pagina(f"{v['nome']} — vereador(a) de {d['cidade']}-{d['uf']} — Radar Prévias", corpo,
         f"Presença, propostas e votos de {v['nome']}, vereador(a) de {d['cidade']}-{d['uf']}.", raiz=subir(cid, 1),
-        voltar=("../", f"Todos os vereadores de {d['cidade']}")), encoding="utf-8")
+        voltar=("../", f"Todos os vereadores de {d['cidade']}"), onde=pasta, imagem=f"og/{cid}.png"), encoding="utf-8")
 
 
 def gerar_como_funciona(cid, d):
@@ -824,18 +866,88 @@ def gerar_como_funciona(cid, d):
 <p>Mostramos só as votações em que o sistema registrou o voto de cada vereador (votação nominal): {num(d['sessoes']['votacoes_nominais'])} de {num(d['sessoes']['votacoes'])} votações nesta legislatura. As demais são simbólicas e não têm esse registro. A data é a da sessão em que a votação aconteceu.</p>
 """
     (pasta / "index.html").write_text(pagina(f"Como funciona — Radar {d['cidade']}", corpo, raiz=subir(cid, 1),
-        voltar=("../", f"Vereadores de {d['cidade']}")), encoding="utf-8")
+        voltar=("../", f"Vereadores de {d['cidade']}"), onde=pasta, imagem=f"og/{cid}.png",
+        descricao=f"Como o Radar Prévias conta presença, propostas e votos dos vereadores de {d['cidade']}-{d['uf']}."), encoding="utf-8")
+
+
+# Os 16 municípios do Amapá. Os que não estão em CAMINHO aparecem como "ainda sem dados abertos".
+MUNICIPIOS_AP = ["Macapá", "Santana", "Laranjal do Jari", "Oiapoque", "Mazagão", "Porto Grande", "Tartarugalzinho",
+                 "Vitória do Jari", "Pedra Branca do Amapari", "Calçoene", "Amapá", "Ferreira Gomes", "Cutias",
+                 "Itaubal", "Serra do Navio", "Pracuúba"]
+
+
+def presenca_media(d):
+    pres = sum(v["presenca"]["presente"] for v in d["vereadores"])
+    cons = sum(v["presenca"]["sessoes_consideradas"] for v in d["vereadores"])
+    return round(100 * pres / cons) if cons else None
 
 
 def gerar_inicio(cidades):
-    cards = "".join(f'<a class="card" href="{CAMINHO.get(c, c)}/"><span><b>{e(d["cidade"])}-{e(d["uf"])}</b><small>{len(d["vereadores"])} vereadores · dados até {data_hora_br(d["coletado_em"])}</small></span></a>' for c, d in cidades.items())
+    cards, busca = [], []
+    for c, d in cidades.items():
+        cam = CAMINHO.get(c, c)
+        props = len({p["id"] for v in d["vereadores"] for p in v["propostas"]})
+        pm = presenca_media(d)
+        cards.append(
+            f'<a class="cidade" href="{cam}/" aria-label="Ver o Radar de {e(d["cidade"])}">'
+            f'<span class="cid-nome">{e(d["cidade"])}<small>-{e(d["uf"])}</small></span>'
+            f'<span class="cid-num"><span><b>{len(d["vereadores"])}</b>vereadores</span>'
+            f'<span><b>{pm}%</b>presença média</span><span><b>{num(props)}</b>propostas</span></span>'
+            f'<span class="cid-data">Dados oficiais até {data_hora_br(d["coletado_em"])}</span>'
+            f'<span class="cid-ir">Ver vereadores →</span></a>')
+        for v in d["vereadores"]:
+            busca.append({"n": v["nome"], "c": v.get("nome_completo") or "", "p": v["partido"] or "",
+                          "m": d["cidade"], "u": f'{cam}/{v["slug"]}/', "f": foto(c, v, "")})
+    tem = {d["cidade"] for d in cidades.values()}
+    faltam = "".join(f'<li>{e(m)}</li>' for m in MUNICIPIOS_AP if m not in tem)
+    como = "".join(f'<li><a href="{CAMINHO.get(c, c)}/como-funciona/">Como contamos em {e(d["cidade"])}</a> · '
+                   f'<a href="{e(d["fonte"])}" target="_blank" rel="noopener">sistema oficial da Câmara ↗</a></li>'
+                   for c, d in cidades.items())
+    total = sum(len(d["vereadores"]) for d in cidades.values())
     corpo = f"""
 <h1>Radar dos vereadores do Amapá</h1>
 <p class="sub">O que cada vereador faz, só com dados oficiais das Câmaras: presença, propostas e votos. Sem nota e sem opinião.</p>
-<div class="cards">{cards}</div>
-<div class="aviso">Começamos pelas Câmaras que publicam os dados num sistema aberto. Outras cidades do Amapá entram assim que for possível coletar os dados oficiais.</div>
+
+<div class="busca-ver">
+<label for="q-ver">Encontre seu vereador</label>
+<input id="q-ver" type="search" placeholder="Digite o nome, apelido ou partido" autocomplete="off">
+<ul id="r-ver" class="r-ver" aria-live="polite"></ul>
+</div>
+
+<h2>Cidades com Radar</h2>
+<div class="cidades">{"".join(cards)}</div>
+
+<h2>As outras {len(MUNICIPIOS_AP) - len(tem)} cidades do Amapá</h2>
+<p class="sub">Entram no Radar quando a Câmara publicar presença, propostas e votos num sistema aberto, que dê para conferir todo dia.</p>
+<ul class="faltam">{faltam}</ul>
+
+<h2 id="como">Como coletamos os dados</h2>
+<p>Todo dia um robô lê o sistema oficial de cada Câmara, confere os números (presença contra votos, propostas sem repetição) e só publica se tudo bater. Cada número no site tem link para o documento original.</p>
+<ul class="itens">{como}</ul>
+<script>
+(function () {{
+  var V = {json.dumps(busca, ensure_ascii=False, separators=(",", ":"))};
+  var q = document.getElementById("q-ver"), r = document.getElementById("r-ver");
+  function norm(t) {{ return (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }}
+  q.addEventListener("input", function () {{
+    var t = norm(q.value.trim()); r.innerHTML = "";
+    if (t.length < 2) return;
+    var achou = V.filter(function (v) {{ return norm(v.n + " " + v.c + " " + v.p + " " + v.m).indexOf(t) >= 0; }}).slice(0, 8);
+    if (!achou.length) {{ var li = document.createElement("li"); li.className = "nada"; li.textContent = "Nenhum vereador encontrado nas {total} cadeiras com Radar."; r.appendChild(li); return; }}
+    achou.forEach(function (v) {{
+      var li = document.createElement("li"), a = document.createElement("a"); a.href = v.u;
+      if (v.f) {{ var im = document.createElement("img"); im.src = v.f; im.alt = ""; im.width = 40; im.height = 40; a.appendChild(im); }}
+      var s = document.createElement("span"), b = document.createElement("b"); b.textContent = v.n; s.appendChild(b);
+      var sm = document.createElement("small"); sm.textContent = (v.p ? v.p + " · " : "") + v.m; s.appendChild(sm);
+      a.appendChild(s); li.appendChild(a); r.appendChild(li);
+    }});
+  }});
+}})();
+</script>
 """
-    (BASE / "index.html").write_text(pagina("Radar Prévias — vereadores do Amapá", corpo, raiz=""), encoding="utf-8")
+    (BASE / "index.html").write_text(pagina("Radar Prévias — vereadores do Amapá", corpo,
+        f"Presença, propostas e votos dos {total} vereadores de " + " e ".join(d["cidade"] for d in cidades.values()) +
+        ", só com dados oficiais das Câmaras. Sem nota e sem opinião.", raiz="", onde=BASE), encoding="utf-8")
 
 
 def main(lista):
@@ -851,6 +963,8 @@ def main(lista):
         f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url={SITE_URL}">'
         f'<link rel="canonical" href="{SITE_URL}"><title>Radar Prévias</title><a href="{SITE_URL}">Radar Prévias</a>\n', encoding="utf-8")
     (PUBLICO / ".nojekyll").write_text("", encoding="utf-8")
+    if (RAIZ / "site" / "og").exists():
+        shutil.copytree(RAIZ / "site" / "og", BASE / "og")
     for arq in ("favicon.png", "logo-previas.png"):
         if (RAIZ / "site" / arq).exists():
             shutil.copy(RAIZ / "site" / arq, BASE / arq)
