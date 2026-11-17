@@ -287,7 +287,7 @@ button.rank{font:inherit;background:none;border:0;width:100%;text-align:left;cur
 .filtros #nome{grid-column:auto}
 .filtros label{font-size:13px;font-weight:600;color:var(--sub);display:flex;flex-direction:column;gap:5px}
 .filtros input,.filtros select{background:var(--suave);border-color:transparent}
-.crachas{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:10px}
+.crachas{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:18px;margin-top:10px}
 .cracha{border:1px solid var(--linha);border-radius:26px;overflow:hidden;background:#fff;box-shadow:var(--sombra);display:flex;flex-direction:column;min-width:0}
 .cracha header{position:relative;padding:22px 16px 14px}
 .cracha .furo{position:absolute;top:10px;left:50%;width:54px;height:8px;margin-left:-27px;border-radius:999px;background:#fff;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
@@ -383,6 +383,14 @@ td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--linha);verti
 .cid-ir{font-weight:700;color:#E8C46A}
 .faltam{list-style:none;padding:0;margin:8px 0;display:flex;flex-wrap:wrap;gap:8px}
 .faltam li{padding:6px 12px;border-radius:999px;background:#EFEBE3;color:#6B6458;font-size:14px}
+
+.pres2 p{margin:0 0 6px;font-size:15px}.pres2 p b{font:800 26px/1 Archivo,sans-serif}
+.barra-pres{height:8px;border-radius:999px;background:#ECE6DA;overflow:hidden;margin-bottom:6px}
+.barra-pres span{display:block;height:100%;background:#283C59;border-radius:999px}
+.pres2 small{display:block;color:var(--sub);font-size:13px}
+.selo-poucas{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#FBF1D6;color:#8A6400;font-size:12px;font-weight:700;vertical-align:middle}
+.total-prop{margin:14px 0 4px;font-size:15px}.total-prop b{font:800 22px Archivo,sans-serif}
+.total-prop .destaque:not(:empty){display:block;color:var(--sub);font-size:13px}
 """
 
 
@@ -426,6 +434,23 @@ SALARIOS = {
 def salario_mensal(sal):
     """Soma do mês: vereadores comuns + cargos da Mesa com acréscimo."""
     return (sal["cadeiras"] - len(sal["mesa"])) * sal["valor"] + sum(v for _, v in sal["mesa"])
+
+
+def texto_cadeiras(d, sal):
+    tit = sum(1 for v in d["vereadores"] if v["titular"])
+    sup = len(d["vereadores"]) - tit
+    cad = sal["cadeiras"] if sal else tit
+    if not sup:
+        return f"São {cad} cadeiras, todas ocupadas pelos titulares desde a posse."
+    return (f"São {cad} cadeiras, e {len(d['vereadores'])} pessoas já ocuparam alguma: {tit} titulares e "
+            f"{sup} {'suplente que assumiu' if sup == 1 else 'suplentes que assumiram'} em algum momento.")
+
+
+def texto_votos(sv):
+    simb = sv["votacoes"] - sv["votacoes_nominais"]
+    vn = sv["votos_nominais"]
+    return (f"Em {num(simb)} das {num(sv['votacoes'])} votações, a votação foi simbólica, sem voto individual registrado. "
+            f"Nas {num(sv['votacoes_nominais'])} restantes, só {num(vn.get('Não', 0))} votos foram “não”{abst_txt(vn)}.")
 
 
 def abst_txt(vn):
@@ -550,6 +575,9 @@ def anel(pct, cor="#283C59"):
             f'transform="rotate(-90 38 38)"/></svg><b{cls}>{pct:.0f}%</b></div>')
 
 
+POUCAS_SESSOES = 30   # abaixo disso o percentual de presença ganha o selo "poucas sessões"
+
+
 def cracha(i, v, d, sal, fotos):
     pr = v["presenca"]
     rp = v["resumo_propostas"]
@@ -568,53 +596,30 @@ def cracha(i, v, d, sal, fotos):
     nome_comp = f'<small>{e(nome_comp)}</small>' if nome_comp and nome_comp.upper() != v["nome"].upper() else ""
 
     if pr["sessoes_consideradas"]:
-        presenca = (f'<div class="pres">{anel(pr["percentual"])}<div><p><b>{pr["presente"]} de {pr["sessoes_consideradas"]}</b> sessões até agora</p>'
-                    f'<small>{pr["justificada"]} {"ausência justificada" if pr["justificada"] == 1 else "ausências justificadas"} · '
+        p_ = pr["percentual"]
+        selo = (f'<span class="selo-poucas" title="Percentual calculado sobre poucas sessões">poucas sessões</span>'
+                if pr["sessoes_consideradas"] < POUCAS_SESSOES else "")
+        presenca = (f'<div class="pres2"><p><b>{p_:.0f}%</b> de presença {selo}</p>'
+                    f'<div class="barra-pres"><span style="width:{p_:.1f}%"></span></div>'
+                    f'<small>{pr["presente"]} de {pr["sessoes_consideradas"]} sessões · {pr["justificada"]} '
+                    f'{"falta justificada" if pr["justificada"] == 1 else "faltas justificadas"} · '
                     f'<span class="{"falta" if pr["ausente"] else ""}">{pr["ausente"]} sem justificativa</span></small>'
                     + (f'<small>{sum(a["sessoes"] for a in pr["periodos_afastamento"])} sessões fora da conta (afastamento)</small>' if pr["periodos_afastamento"] else "")
-                    + '</div></div>')
+                    + '</div>')
     else:
-        presenca = '<div class="pres">' + anel(None) + '<div><p>Sem presença registrada no período</p></div></div>'
-
-    s = salario_de(v, sal)
-    caixas = ""
-    if s:
-        caixas += f'<div class="caixa"><b>{brl(s)}</b><span>salário por mês</span></div>'
-    caixas += f'<div class="caixa"><b>{num(tot)}</b><span>propostas até agora</span></div>'
-
-    barra = "".join(f'<span style="width:{rp[g] / (tot or 1) * 100:.2f}%;background:{CORES_GRUPO[g]}"></span>' for g in grupos if rp[g])
-    linhas = "".join(
-        f'<a class="lin" href="{e(v["slug"])}/#propostas"><i style="background:{CORES_GRUPO[g]}"></i>{e(n)}<b>{num(rp[g])}</b><em>›</em></a>'
-        for g, n in grupos.items())
-
-    rv = v.get("resumo_votos") or {}
-    sim = rv.get("Sim", 0)
-    # "Não votou" fica à parte: na presidência é a regra (só vota para desempatar).
-    nao = rv.get("Não", 0) + rv.get("Abstenção", 0)
-    nv = sum(n for k, n in rv.items() if k not in ("Sim", "Não", "Abstenção"))
-    obs_nv = ""
-    if nv:
-        pres = (cargo_atual(v) or "").lower() == "presidente"
-        obs_nv = (f'<p class="obs-voto">{num(nv)} vez{"es" if nv > 1 else ""} sem voto registrado'
-                  f'{" — na presidência, só se vota para desempatar" if pres else ""}.</p>')
-    votos = (f'<div class="votos"><div class="caixa sim"><b>{num(sim)}</b><span>vezes sim</span></div>'
-             f'<div class="caixa nao"><b>{num(nao)}</b><span>{"não ou abstenção" if rv.get("Abstenção") else "vezes não"}</span></div></div>{obs_nv}')
-
+        presenca = '<div class="pres2"><p>Sem presença registrada no período</p></div>'
     fundo = FUNDOS_CRACHA[i % len(FUNDOS_CRACHA)]
     pct = pr["percentual"] if pr["percentual"] is not None else 999
-    return f"""<article class="cracha" data-nome="{e(v['nome'])}" data-partido="{e(v['partido'] or '')}" data-pres="{pct}" data-lei="{rp['lei']}" data-hom="{rp['homenagem']}" data-mel="{rp['melhoria']}" data-tot="{tot}" data-nao="{nao}">
+    poucas = 1 if pr["sessoes_consideradas"] < POUCAS_SESSOES else 0
+    nao = (v.get("resumo_votos") or {}).get("Não", 0)
+    return f"""<article class="cracha" data-nome="{e(v['nome'])}" data-partido="{e(v['partido'] or '')}" data-pres="{pct}" data-poucas="{poucas}" data-lei="{rp['lei']}" data-hom="{rp['homenagem']}" data-mel="{rp['melhoria']}" data-tot="{tot}">
 <header style="background:{fundo}"><span class="furo"></span>
 <div class="quem">{foto_html}<div><h3><a href="{e(v['slug'])}/">{e(v['nome'])}</a></h3>{nome_comp}</div></div>
 <div class="pills">{pills}</div></header>
 <div class="corpo">
 {presenca}
-<div class="caixas">{caixas}</div>
-<h4>O que propôs até agora</h4>
-<div class="barra">{barra}</div>
-<div class="linhas">{linhas}</div>
-<h4>Como votou até agora</h4>
-{votos}
-<p class="links"><a href="{e(v['slug'])}/">Ver página completa →</a><a href="{e(v['fonte'])}" target="_blank" rel="noopener">Ficha oficial na Câmara ↗</a></p>
+<div class="total-prop"><b>{num(tot)}</b> propostas até agora<span class="destaque" data-lei="{num(rp['lei'])} propostas de lei" data-hom="{num(rp['homenagem'])} homenagens" data-mel="{num(rp['melhoria'])} pedidos de melhoria"></span></div>
+<p class="links"><a href="{e(v['slug'])}/">Ver página →</a><a href="{e(v['fonte'])}" target="_blank" rel="noopener">Ficha na Câmara ↗</a></p>
 </div></article>"""
 
 
@@ -645,7 +650,7 @@ def gerar_cidade(cid, d):
         dados_js["sal"] = {"mensal": mensal, "posse": leg["inicio"]}
         mesa = "".join(f"; {n.lower()} {brl(v)}" for n, v in sal["mesa"])
         bloco_sal = f"""<div class="salario">
-<p>Salário pago aos {sal['cadeiras']} vereadores desde a posse</p>
+<p>Salário pago às {sal['cadeiras']} cadeiras da Câmara desde a posse</p>
 <strong id="contador">{brl(0)}</strong>
 <small>e subindo agora · estimativa: {sal['cadeiras']} salários por mês ({brl(sal['valor'])} cada{mesa}) desde {data_br(leg['inicio'])}. Valor bruto da <a href="{e(sal['fonte'])}" target="_blank" rel="noopener">{e(sal['rotulo'])}</a>, sem 13º nem verba indenizatória.</small>
 </div>"""
@@ -702,7 +707,7 @@ def gerar_cidade(cid, d):
 
 <section id="homenagem">
 <p class="olho">O trabalho da Câmara</p>
-<h2>Homenagem ou trabalho?</h2>
+<h2>Que tipo de proposta?</h2>
 <p class="sub">São {num(len(todas))} propostas até agora, cada uma contada uma vez, separadas pelo tipo e pelas palavras do texto oficial, com a mesma regra para todos.</p>
 <div class="barra grossa">{barra_cidade}</div>
 <div class="grupos">{cartoes_grupo}</div>
@@ -711,21 +716,22 @@ def gerar_cidade(cid, d):
 <section id="vereadores">
 <p class="olho">Um por um</p>
 <h2>Os {n_ver} vereadores</h2>
-<p class="sub">{sum(1 for v in d['vereadores'] if v['titular'])} titulares e {sum(1 for v in d['vereadores'] if not v['titular'])} suplentes que assumiram em algum momento. Das {num(sv['votacoes'])} votações, só {num(sv['votacoes_nominais'])} registram o voto de cada um, e nelas houve {num(sv['votos_nominais'].get('Não', 0))} votos “não” em {num(sum(sv['votos_nominais'].values()))}.</p>
+<p class="sub">{texto_cadeiras(d, sal)} {texto_votos(sv)}</p>
 <div class="filtros">
 <label>Buscar por nome<input id="nome" type="search" placeholder="Ex.: Socorro, Bruno" autocomplete="off"></label>
 <label>Partido<select id="partido"><option value="">Todos</option>{''.join(f'<option>{e(p)}</option>' for p in partidos)}</select></label>
 <label>Ordenar por<select id="ordem">
 <option value="nome">Nome (A–Z)</option>
+<option value="pres_mais">Maior presença</option>
 <option value="pres">Menor presença</option>
 <option value="lei">Mais propostas de lei</option>
 <option value="hom">Mais homenagens</option>
 <option value="mel">Mais pedidos de melhoria</option>
 <option value="tot">Mais propostas no total</option>
-<option value="nao">Mais votos “não”</option>
 </select></label>
 </div>
 <p class="nota" id="mostrando">Mostrando os {n_ver} vereadores.</p>
+<p class="nota" id="aviso-poucas" hidden>Quem tem menos de {POUCAS_SESSOES} sessões na conta (em geral suplentes) vai para o fim: o percentual sobre poucas sessões não dá para comparar.</p>
 <div class="crachas" id="cards">{crachas}</div>
 </section>
 
@@ -766,6 +772,10 @@ def gerar_vereador(cid, d, v):
     foto_html = f'<img class="foto" src="{e(f)}" alt="Foto de {e(v["nome"])}">' if f else ""
     email = f'<br><small>E-mail do gabinete: <a href="mailto:{e(v["email"])}">{e(v["email"])}</a></small>' if v["email"] else ""
     sup = "Titular" if v["titular"] else "Suplente que assumiu o mandato"
+    sal = SALARIOS.get(cid)
+    sv_ = salario_de(v, sal)
+    sal_html = (f'<p class="sub">Salário: <b>{brl(sv_)} por mês</b>, valor bruto da <a href="{e(sal["fonte"])}" target="_blank" rel="noopener">{e(sal["rotulo"])}</a>.</p>'
+                if sv_ else "")
 
     # presença
     if pr["sessoes_consideradas"]:
@@ -810,9 +820,7 @@ def gerar_vereador(cid, d, v):
 
     # votos
     sv = d["sessoes"]
-    contexto = (f'De {num(sv["votacoes"])} votações nesta legislatura, só {num(sv["votacoes_nominais"])} registram o voto de cada vereador — as demais são simbólicas. '
-                f'Nessas {num(sv["votacoes_nominais"])}, a Câmara registrou {num(sv["votos_nominais"].get("Sim", 0))} votos "sim" e {num(sv["votos_nominais"].get("Não", 0))} "não"'
-                f'{abst_txt(sv["votos_nominais"])}: quase tudo é aprovado.')
+    contexto = texto_votos(sv)
     if v["votos"]:
         linhas = "".join(
             f'<li>{data_br(x["data"])} — <span class="{"v-sim" if x["voto"] == "Sim" else "v-nao" if x["voto"] == "Não" else ""}">{e(x["voto"])}</span> · {e(x["materia"])}'
@@ -828,6 +836,7 @@ def gerar_vereador(cid, d, v):
     corpo = f"""
 <div class="perfil">{foto_html}<div><h1>{e(v['nome'])}</h1><p class="sub">{e(v['partido'] or 'Partido não informado')} · {sup}{email}</p></div></div>
 <p class="sub"><a href="{e(v['fonte'])}" target="_blank" rel="noopener">Ficha oficial no site da {e(d['camara'])}</a></p>
+{sal_html}
 <h2>Presença nas sessões</h2>
 {bloco_pres}
 <h2 id="propostas">Propostas apresentadas</h2>

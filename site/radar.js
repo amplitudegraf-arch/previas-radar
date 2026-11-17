@@ -337,10 +337,20 @@
       var q = norm(nome.value), pt = partido.value, o = ordem.value, n = 0;
       var lista = todos.slice().sort(function (a, b) {
         if (o === "nome") return a.dataset.nome.localeCompare(b.dataset.nome, "pt-BR");
-        if (o === "pres") return parseFloat(a.dataset.pres) - parseFloat(b.dataset.pres);
+        if (o === "pres" || o === "pres_mais") {
+          // percentual sobre poucas sessões não se compara: vai para o fim
+          var dp = (+a.dataset.poucas) - (+b.dataset.poucas);
+          if (dp) return dp;
+          var d = parseFloat(a.dataset.pres) - parseFloat(b.dataset.pres);
+          return (o === "pres" ? d : -d) || a.dataset.nome.localeCompare(b.dataset.nome, "pt-BR");
+        }
         return (+b.dataset[o]) - (+a.dataset[o]) || a.dataset.nome.localeCompare(b.dataset.nome, "pt-BR");
       });
+      var aviso = document.getElementById("aviso-poucas");
+      if (aviso) aviso.hidden = !((o === "pres" || o === "pres_mais") && todos.some(function (c) { return c.dataset.poucas === "1"; }));
       lista.forEach(function (c) {
+        var dz = c.querySelector(".destaque");
+        if (dz) dz.textContent = dz.dataset[o] ? "· " + dz.dataset[o] : "";
         c.hidden = !((!q || norm(c.dataset.nome).indexOf(q) >= 0) && (!pt || c.dataset.partido === pt));
         if (!c.hidden) n++;
         cards.appendChild(c);
