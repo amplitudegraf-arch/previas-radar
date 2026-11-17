@@ -86,12 +86,32 @@ def _links_locais(html_txt):
 DESCRICAO_PADRAO = "O que cada vereador faz, só com dados oficiais das Câmaras: presença, propostas e votos. Sem nota e sem opinião."
 
 
+NOMES_CIDADES = {}   # cid -> nome, preenchido em main(); usado no "Outras cidades"
+
+
+def trilha(raiz, cid=None, nivel=0, atual=None):
+    """Amapá › Cidade › Página, e atalho para as outras cidades com Radar.
+    nivel: 0 = página da cidade, 1 = subpágina (vereador, como funciona)."""
+    partes = [f'<a href="{raiz}">Amapá</a>']
+    if cid:
+        nome = NOMES_CIDADES.get(cid, cid)
+        partes.append(f'<a href="{"../" if nivel else "./"}">{e(nome)}</a>' if atual else f'<span aria-current="page">{e(nome)}</span>')
+    if atual:
+        partes.append(f'<span aria-current="page">{e(atual)}</span>')
+    outras = "".join(f'<a href="{raiz}{CAMINHO.get(c, c)}/">{e(n)}</a>' for c, n in NOMES_CIDADES.items() if c != cid)
+    outras = f'<span class="outras">Outra cidade: {outras}</span>' if cid and outras else ""
+    return f'<nav class="trilha" aria-label="Você está em">{" <i>›</i> ".join(partes)}{outras}</nav>'
+
+
 def pagina(titulo, corpo, descricao="", raiz="../", voltar=None, onde=None, imagem="og/ap.png"):
     return _links_locais(_pagina(titulo, corpo, descricao, raiz, voltar, onde, imagem))
 
 
 def _pagina(titulo, corpo, descricao="", raiz="../", voltar=None, onde=None, imagem="og/ap.png"):
-    volta = f'<a class="voltar" href="{e(voltar[0])}">← {e(voltar[1])}</a>' if voltar else ""
+    if isinstance(voltar, str):
+        volta = voltar                     # trilha pronta
+    else:
+        volta = f'<a class="voltar" href="{e(voltar[0])}">← {e(voltar[1])}</a>' if voltar else ""
     descricao = descricao or DESCRICAO_PADRAO
     rel = "" if onde is None else onde.relative_to(BASE).as_posix()
     url = SITE_URL + (rel + "/" if rel and rel != "." else "")
@@ -391,6 +411,14 @@ td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--linha);verti
 .selo-poucas{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#FBF1D6;color:#8A6400;font-size:12px;font-weight:700;vertical-align:middle}
 .total-prop{margin:14px 0 4px;font-size:15px}.total-prop b{font:800 22px Archivo,sans-serif}
 .total-prop .destaque:not(:empty){display:block;color:var(--sub);font-size:13px}
+
+.trilha{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;margin:4px 0 10px;color:var(--sub)}
+.trilha a{color:var(--ink,#1E2C42);font-weight:600}
+.trilha i{font-style:normal;opacity:.6}
+.trilha [aria-current]{color:var(--sub)}
+.trilha .outras{margin-left:auto;display:flex;gap:8px;align-items:center}
+.trilha .outras a{padding:3px 10px;border:1px solid #d8cfbf;border-radius:999px;text-decoration:none;font-size:13px}
+@media (max-width:520px){.trilha .outras{margin-left:0;width:100%}}
 """
 
 
@@ -411,7 +439,7 @@ SALARIOS = {
     "santana": {
         "cadeiras": 15,
         "valor": 9032,
-        "mesa": [["Presidente", 18064], ["1º(ª) Secretário(a)", 13548]],
+        "mesa": [["Presidência", 18064], ["1ª Secretaria", 13548]],
         "documento": "Tabela Padrão Remuneratório Vereadores — vigente para o exercício de 2026",
         "fonte": "https://www.santana.ap.leg.br/transparencia-old/gestao-de-pessoas/folha-de-pagamento-servidores/padrao-remuneratorio/tabela-remuneratoria-vereadores",
         "rotulo": "tabela oficial da Câmara",
@@ -544,21 +572,52 @@ def montar_pedidos(cid, d, fotos):
     return todas, pedidos, rep
 
 
+def nome_cargo(cargo, sexo=""):
+    """Grafia única para os cargos da Mesa (o SAPL escreve de vários jeitos)."""
+    t = re.sub(r"\s+", " ", (cargo or "").upper().replace("-", " ")).strip()
+    f = (sexo or "").upper().startswith("F")
+    o = "ª" if f else "º"
+    n = "1" if re.search(r"\b(PRIMEIR[OA]|1)", t) else "2" if re.search(r"\b(SEGUND[OA]|2)", t) else "3" if re.search(r"\b(TERCEIR[OA]|3)", t) else ""
+    if "VICE" in t:
+        return f"{n}{o} Vice-presidente" if n else "Vice-presidente"
+    if "SECRET" in t:
+        base = "Secretária" if f else "Secretário"
+        return f"{n}{o} {base}" if n else base
+    if "PRESIDENTE" in t:
+        return "Presidente"
+    return (cargo or "").strip()
+
+
+def preparar_mesa(cid, d):
+    """Marca o cargo de cada vereador na Mesa do ano mais recente da Câmara.
+    Cargo de anos anteriores não é cargo atual (ex.: 2º vice em 2025 que não continuou em 2026)."""
+    sexo = {}
+    arq = RAIZ / "dados" / "bruto" / cid / "parlamentares.json"
+    if arq.exists():
+        sexo = {p["id"]: p.get("sexo") or "" for p in json.loads(arq.read_text(encoding="utf-8"))}
+    anos = [m["ano"] for v in d["vereadores"] for m in v.get("mesa") or []]
+    ult = max(anos) if anos else None
+    for v in d["vereadores"]:
+        sx = sexo.get(v["id"], "")
+        hist = {}
+        for m in v.get("mesa") or []:
+            hist.setdefault(m["ano"], nome_cargo(m["cargo"], sx))
+        v["mesa_hist"] = sorted(hist.items())
+        v["cargo_atual"] = hist.get(ult)
+    d["ano_mesa"] = ult
+
+
 def cargo_atual(v):
-    """Cargo na Mesa Diretora no ano mais recente registrado."""
-    if not v.get("mesa"):
-        return None
-    ult = max(m["ano"] for m in v["mesa"])
-    return next(m["cargo"] for m in v["mesa"] if m["ano"] == ult)
+    return v.get("cargo_atual")
 
 
 def salario_de(v, sal):
     if not sal:
         return None
-    c = (cargo_atual(v) or "").lower()
-    if c == "presidente" and sal["mesa"]:
+    c = cargo_atual(v) or ""
+    if c == "Presidente" and sal["mesa"]:
         return sal["mesa"][0][1]
-    if len(sal["mesa"]) > 1 and c.startswith("primeiro-secret") or c.startswith("1º secret") or c.startswith("1º(ª) secret"):
+    if len(sal["mesa"]) > 1 and c in ("1º Secretário", "1ª Secretária"):
         return sal["mesa"][1][1]
     return sal["valor"]
 
@@ -756,7 +815,7 @@ def gerar_cidade(cid, d):
 """
     (pasta / "index.html").write_text(pagina(f"Radar {d['cidade']}-{d['uf']} — vereadores — Prévias", corpo,
         f"O que cada vereador de {d['cidade']}-{d['uf']} fez desde a posse: pedidos por bairro, presença, propostas e votos, só com dados oficiais.", raiz=R,
-        onde=pasta, imagem=f"og/{cid}.png"), encoding="utf-8")
+        voltar=trilha(R, cid), onde=pasta, imagem=f"og/{cid}.png"), encoding="utf-8")
 
     for v in d["vereadores"]:
         gerar_vereador(cid, d, v)
@@ -772,6 +831,10 @@ def gerar_vereador(cid, d, v):
     foto_html = f'<img class="foto" src="{e(f)}" alt="Foto de {e(v["nome"])}">' if f else ""
     email = f'<br><small>E-mail do gabinete: <a href="mailto:{e(v["email"])}">{e(v["email"])}</a></small>' if v["email"] else ""
     sup = "Titular" if v["titular"] else "Suplente que assumiu o mandato"
+    if cargo_atual(v):
+        sup += f" · {cargo_atual(v)} da Câmara"
+    passados = [(a, c) for a, c in v.get("mesa_hist", []) if a != d.get("ano_mesa")]
+    mesa_html = (f'<p class="sub">Mesa Diretora em anos anteriores: ' + "; ".join(f"{e(c)} em {a}" for a, c in passados) + ".</p>") if passados else ""
     sal = SALARIOS.get(cid)
     sv_ = salario_de(v, sal)
     sal_html = (f'<p class="sub">Salário: <b>{brl(sv_)} por mês</b>, valor bruto da <a href="{e(sal["fonte"])}" target="_blank" rel="noopener">{e(sal["rotulo"])}</a>.</p>'
@@ -828,7 +891,7 @@ def gerar_vereador(cid, d, v):
             f'<a href="{e(x["fonte"])}" target="_blank" rel="noopener">ver matéria</a> · <a href="{e(x["fonte_sessao"])}" target="_blank" rel="noopener">ver sessão</a></small></li>' for x in v["votos"])
         rv = ", ".join(f'{n} "{k.lower()}"' for k, n in sorted(v["resumo_votos"].items(), key=lambda kv: -kv[1]))
         obs_pres = (" Na presidência, só se vota para desempatar; por isso tantos registros sem voto."
-                    if (cargo_atual(v) or "").lower() == "presidente" and (v.get("resumo_votos") or {}).get("Não Votou") else "")
+                    if cargo_atual(v) == "Presidente" and (v.get("resumo_votos") or {}).get("Não Votou") else "")
         bloco_votos = f'<p class="sub">{e(contexto)}</p><p>{e(v["nome"])} tem {num(len(v["votos"]))} votos registrados um a um ({e(rv)}).{obs_pres}</p><details><summary>Ver todos os votos <small>({num(len(v["votos"]))})</small></summary><ul class="itens">{linhas}</ul></details>'
     else:
         bloco_votos = f'<p class="sub">{e(contexto)}</p><p>Não há votos de {e(v["nome"])} registrados um a um nesta legislatura.</p>'
@@ -837,6 +900,7 @@ def gerar_vereador(cid, d, v):
 <div class="perfil">{foto_html}<div><h1>{e(v['nome'])}</h1><p class="sub">{e(v['partido'] or 'Partido não informado')} · {sup}{email}</p></div></div>
 <p class="sub"><a href="{e(v['fonte'])}" target="_blank" rel="noopener">Ficha oficial no site da {e(d['camara'])}</a></p>
 {sal_html}
+{mesa_html}
 <h2>Presença nas sessões</h2>
 {bloco_pres}
 <h2 id="propostas">Propostas apresentadas</h2>
@@ -848,7 +912,7 @@ def gerar_vereador(cid, d, v):
 """
     (pasta / "index.html").write_text(pagina(f"{v['nome']} — vereador(a) de {d['cidade']}-{d['uf']} — Radar Prévias", corpo,
         f"Presença, propostas e votos de {v['nome']}, vereador(a) de {d['cidade']}-{d['uf']}.", raiz=subir(cid, 1),
-        voltar=("../", f"Todos os vereadores de {d['cidade']}"), onde=pasta, imagem=f"og/{cid}.png"), encoding="utf-8")
+        voltar=trilha(subir(cid, 1), cid, 1, v["nome"]), onde=pasta, imagem=f"og/{cid}.png"), encoding="utf-8")
 
 
 def gerar_como_funciona(cid, d):
@@ -875,7 +939,7 @@ def gerar_como_funciona(cid, d):
 <p>Mostramos só as votações em que o sistema registrou o voto de cada vereador (votação nominal): {num(d['sessoes']['votacoes_nominais'])} de {num(d['sessoes']['votacoes'])} votações nesta legislatura. As demais são simbólicas e não têm esse registro. A data é a da sessão em que a votação aconteceu.</p>
 """
     (pasta / "index.html").write_text(pagina(f"Como funciona — Radar {d['cidade']}", corpo, raiz=subir(cid, 1),
-        voltar=("../", f"Vereadores de {d['cidade']}"), onde=pasta, imagem=f"og/{cid}.png",
+        voltar=trilha(subir(cid, 1), cid, 1, "Como funciona"), onde=pasta, imagem=f"og/{cid}.png",
         descricao=f"Como o Radar Prévias conta presença, propostas e votos dos vereadores de {d['cidade']}-{d['uf']}."), encoding="utf-8")
 
 
@@ -980,8 +1044,11 @@ def main(lista):
     cidades = {}
     for cid in lista:
         d = json.loads((RAIZ / "dados" / "site" / f"{cid}.json").read_text(encoding="utf-8"))
-        gerar_cidade(cid, d)
+        preparar_mesa(cid, d)
         cidades[cid] = d
+        NOMES_CIDADES[cid] = d["cidade"]
+    for cid, d in cidades.items():
+        gerar_cidade(cid, d)
     gerar_inicio(cidades)
     print("site gerado em", PUBLICO)
 
